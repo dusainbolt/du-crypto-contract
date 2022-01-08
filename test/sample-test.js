@@ -1,12 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-
-const _ = {
-  // listingPrice: 0.025 * 10 ** 18,
-  listingPrice: ethers.utils.parseUnits('0.00025', 'ether'),
-  nftContractName: 'NFT contract name',
-  nftContractSymbol: 'NFTSymbol',
-};
+const _ = require('../constant');
 
 const createNFTMarketplace = async () => {
   const NFTMarketFactory = await ethers.getContractFactory('NFTMarket');
@@ -80,5 +74,7 @@ describe('NFT Market Testing', async () => {
     let itemsCreated = await nftMarket.connect(senderConsole).fetchItemsCreated();
     itemsCreated = await templateItem(itemsCreated, nft);
     console.log('itemsCreated: ', itemsCreated);
+
+    await nftMarket.setListingPrice(listingPrice);
   });
 });
