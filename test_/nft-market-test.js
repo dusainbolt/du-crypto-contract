@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
-const _ = require('../constant');
+const _ = require('../common/constant');
 
 const createNFTMarketplace = async () => {
   const NFTMarketFactory = await ethers.getContractFactory('NFTMarket');
