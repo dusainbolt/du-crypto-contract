@@ -88,6 +88,10 @@ contract NFTMarket is ReentrancyGuard, Ownable {
         );
     }
 
+    function getBalance() public view returns(uint) {
+        return address(this).balance;
+    }
+
     /* Creates the sale of a marketplace item */
     /* Transfers ownership of the item, as well as funds between parties */
     function createMarketSale(address nftContract, uint256 itemId)
