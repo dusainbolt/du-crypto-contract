@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 contract EtherGame {
     uint256 public targetAmount = 7 ether;
     address public winner;
+    // comment for preventative
+    uint256 public balance;
+
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
@@ -11,8 +14,9 @@ contract EtherGame {
 
     function deposit() public payable {
         require(msg.value == 1 ether, "You can send only 1 ether");
-
-        uint256 balance = getBalance();
+        // comment for preventative
+        // uint256 balance = getBalance();
+        balance += msg.value;
 
         require(balance <= targetAmount, "Game is over");
 
@@ -23,7 +27,7 @@ contract EtherGame {
 
     function claimReward() public {
         require(msg.sender == winner, "You're not winner");
-        (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+        (bool sent, ) = msg.sender.call{value: balance}("");
         require(sent, "Failed to send Ether");
     }
 }
