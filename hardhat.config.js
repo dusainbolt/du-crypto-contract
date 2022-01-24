@@ -48,6 +48,11 @@ module.exports = {
       url: process.env.MUMBAI_URL || '',
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
+    rinkeby: {
+      // Infura
+      url: process.env.RINKEBY_URL || '',
+      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
   },
   solidity: {
     version: '0.8.0',
