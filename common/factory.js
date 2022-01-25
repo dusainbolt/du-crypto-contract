@@ -29,6 +29,27 @@ class Factory {
     await attack.deployed();
     return attack;
   };
+
+  static createProxyContract = async () => {
+    const proxyFactory = await ethers.getContractFactory('Proxy');
+    const proxy = await proxyFactory.deploy();
+    await proxy.deployed();
+    return proxy;
+  };
+
+  static createHandlerV1Contract = async () => {
+    const handlerV1Factory = await ethers.getContractFactory('HandlerV1');
+    const handlerV1 = await handlerV1Factory.deploy();
+    await handlerV1.deployed();
+    return handlerV1;
+  };
+
+  static createHandlerV2Contract = async () => {
+    const handlerV2Factory = await ethers.getContractFactory('HandlerV2');
+    const handlerV2 = await handlerV2Factory.deploy();
+    await handlerV2.deployed();
+    return handlerV2;
+  };
 }
 
 module.exports = Factory;
