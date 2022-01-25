@@ -46,23 +46,23 @@ contract Proxy {
 }
 
 contract HandlerV1 {
-    uint256 public value;
     address public implementation;
+    uint public x;
 
-    function countValue() external {
-        value += 1;
+    function inc() external {
+        x += 1;
     }
 }
 
 contract HandlerV2 {
-    uint256 public value;
     address public implementation;
+    uint public x;
 
-    function increaseValue() external {
-        value += 1;
+    function inc() external {
+        x += 1;
     }
 
-    function decreaseValue() external {
-        value -= 1;
+    function dec() external {
+        x -= 1;
     }
 }
