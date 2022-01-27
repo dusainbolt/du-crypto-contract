@@ -48,6 +48,20 @@ class Factory {
     await handlerV2.deployed();
     return [handlerV2, handlerV2Factory];
   };
+
+  static createKingOfEtherContract = async () => {
+    const kingOfEtherFactory = await ethers.getContractFactory('KingOFEther');
+    const kingOfEther = await kingOfEtherFactory.deploy();
+    await kingOfEther.deployed();
+    return [kingOfEther, kingOfEtherFactory];
+  };
+
+  static createAttackKingOfEtherContract = async kingOfEtherAddress => {
+    const attackKingOfEtherFactory = await ethers.getContractFactory('AttackKingOfEther');
+    const attackKingOfEther = await attackKingOfEtherFactory.deploy(kingOfEtherAddress);
+    await attackKingOfEther.deployed();
+    return [attackKingOfEther, attackKingOfEtherFactory];
+  };
 }
 
 module.exports = Factory;

@@ -2,20 +2,13 @@ const { expect } = require('chai');
 const _ = require('../common/constant');
 const Factory = require('../common/factory');
 const { ethers } = require('hardhat');
-const handlerV1ABI = require('../artifacts/contracts/Proxy.sol/HandlerV1.json');
-
-// const _helper = require('../common/helper');
 
 describe('Handle proxy implement upgradeable contract', () => {
   let proxy, handlerV1, handlerV1Factory, handlerV2, owner;
   beforeEach(async () => {
-    proxyFactory = await ethers.getContractFactory('Proxy');
-    proxy = await proxyFactory.deploy(); // [handlerV1, handlerV1Factory] = await Factory.createHandlerV1Contract();
-
-    handlerV1Factory = await ethers.getContractFactory('HandlerV1');
-    handlerV1 = await handlerV1Factory.deploy();
-
-    [handlerV2] = await Factory.createHandlerV2Contract();
+    proxy = await Factory.createProxyContract();
+    [handlerV1, handlerV1Factory] = await Factory.createHandlerV1Contract();
+    [handlerV2, handlerV2Factory] = await Factory.createHandlerV2Contract();
     [owner] = await ethers.getSigners();
   });
   describe('Deployment', () => {
@@ -35,14 +28,17 @@ describe('Handle proxy implement upgradeable contract', () => {
       await proxy.setImplementation(handlerV1.address);
       const proxyHandlerV1 = await handlerV1Factory.attach(proxy.address);
 
-      console.log('====> handlerV1Factory', handlerV1Factory);
-      console.log('====> proxy', proxy.address);
-      console.log('====> proxyHandlerV1', proxyHandlerV1.address);
-
       await proxyHandlerV1.inc();
-      // await proxyHandlerV1.increaseCount();
-      // await proxyHandlerV1.increaseCount();
-      console.log(await proxyHandlerV1.x());
+      await proxyHandlerV1.inc();
+      await proxyHandlerV1.inc();
+      expect(await proxyHandlerV1.x()).to.equal(3);
+
+      await proxy.setImplementation(handlerV2.address);
+      const proxyHandlerV2 = await handlerV2Factory.attach(proxy.address);
+
+      await proxyHandlerV2.dec();
+
+      expect(await proxyHandlerV1.x()).to.equal(2);
     });
   });
 });
