@@ -73,5 +73,41 @@ contract IDOPool is Pausable, Ownable, ReentrancyGuard {
     event RefundedICOToken(address wallet, uint256 amount);
     event PoolStatsChanged();
 
-    // constructor();
+    constructor() {
+        factory = msg.sender;
+    }
+
+    function initialize(
+        address _token,
+        uint256 _duration,
+        uint256 _openTime,
+        address _offeredCurrency,
+        uint256 _offeredRate,
+        uint256 _offeredCurrencyDecimals,
+        address _wallet,
+        address _singer
+    ) external {
+        require(msg.sender == factory, "POOL:UNAUTHORIZED");
+
+        token = IERC20(_token);
+        openTime = _openTime;
+        closeTime = openTime.add(_duration);
+        fundingWallet = _wallet;
+        _transferOwnership(tx.origin);
+        _unpause();
+        singer = _singer;
+        offeredCurrencies[_offeredCurrency] = OfferedCurrency({
+            rate: _offeredRate,
+            decimals: _offeredCurrencyDecimals
+        });
+
+        emit PoolCreated(
+            _token,
+            _openTime,
+            closeTime,
+            _offeredCurrency,
+            _offeredCurrencyDecimals,
+            _offeredRate
+        );
+    }
 }

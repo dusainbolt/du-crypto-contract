@@ -15,8 +15,10 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   }
 });
 
-// // You need to export an object to set up your config
-// // Go to https://hardhat.org/config/ to learn more
+const privateKey = process.env.PRIVATE_KEY;
+
+// You need to export an object to set up your config
+// Go to https://hardhat.org/config/ to learn more
 
 // /**
 //  * @type import('hardhat/config').HardhatUserConfig
@@ -38,6 +40,10 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
 //   },
 // };
 
+// Sign message common with EtherProject...
+// const signer = await library.getSigner(creator);
+// signCollection = await signer.signMessage(sigHashBytes);
+
 module.exports = {
   networks: {
     hardhat: {
@@ -46,12 +52,12 @@ module.exports = {
     mumbai: {
       // Infura
       url: process.env.MUMBAI_URL || '',
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts: privateKey !== undefined ? [privateKey] : [],
     },
     rinkeby: {
       // Infura
       url: process.env.RINKEBY_URL || '',
-      accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts: privateKey !== undefined ? [privateKey] : [],
     },
   },
   solidity: {
