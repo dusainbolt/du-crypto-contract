@@ -3,78 +3,102 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../libraries/Pausable.sol"; 
 
-contract IDOPool is Pausable, Ownable, ReentrancyGuard {
-    using SafeMath for uint256;
+contract IDOPool is Pausable, ReentrancyGuard {
+      using SafeMath for uint256;
 
     struct OfferedCurrency {
         uint256 decimals;
         uint256 rate;
     }
 
-    // Token being sold
+    // The token being sold
     IERC20 public token;
 
-    // Address of factory contract
+    // The address of factory contract
     address public factory;
 
-    // Address of singer account
-    address public singer;
+    // The address of signer account
+    address public signer;
 
     // Address where funds are collected
     address public fundingWallet;
 
-    // Time when token is opened to sell
-    uint256 public openTime;
+    // Timestamps when token started to sell
+    uint256 public openTime = block.timestamp;
 
-    // Time When token is closed to sell
+    // Timestamps when token stopped to sell
     uint256 public closeTime;
 
-    // Amount of wei is raised
+    // Amount of wei raised
     uint256 public weiRaised = 0;
 
     // Amount of token sold
     uint256 public tokenSold = 0;
 
-    // Total token who each user purchased
+    // Number of token user purchased
     mapping(address => uint256) public userPurchased;
 
-    // Get offer currency
+    // Get offered currencies
     mapping(address => OfferedCurrency) public offeredCurrencies;
 
     // Pool extensions
     bool public useWhitelist = true;
 
-    // Event of IDO pool
+    // -----------------------------------------
+    // Lauchpad Starter's event
+    // -----------------------------------------
     event PoolCreated(
         address token,
         uint256 openTime,
         uint256 closeTime,
         address offeredCurrency,
         uint256 offeredCurrencyDecimals,
-        uint256 offeredCurrencyRate
+        uint256 offeredCurrencyRate,
+        address wallet,
+        address owner
     );
     event TokenPurchaseByEther(
         address indexed purchaser,
         address indexed beneficiary,
-        address value,
+        uint256 value,
         uint256 amount
     );
     event TokenPurchaseByToken(
         address indexed purchaser,
         address indexed beneficiary,
         address token,
-        address value,
+        uint256 value,
         uint256 amount
     );
-    event RefundedICOToken(address wallet, uint256 amount);
+    event RefundedIcoToken(address wallet, uint256 amount);
     event PoolStatsChanged();
 
+    // -----------------------------------------
+    // Constructor
+    // -----------------------------------------
     constructor() {
         factory = msg.sender;
+    }
+
+    // -----------------------------------------
+    // Red Kite external interface
+    // -----------------------------------------
+
+    /**
+     * @dev fallback function
+     */
+    fallback() external {
+        revert();
+    }
+
+    /**
+     * @dev fallback function
+     */
+    receive() external payable {
+        revert();
     }
 
     function initialize(
@@ -84,8 +108,7 @@ contract IDOPool is Pausable, Ownable, ReentrancyGuard {
         address _offeredCurrency,
         uint256 _offeredRate,
         uint256 _offeredCurrencyDecimals,
-        address _wallet,
-        address _singer
+        address _wallet
     ) external {
         require(msg.sender == factory, "POOL:UNAUTHORIZED");
 
@@ -94,8 +117,7 @@ contract IDOPool is Pausable, Ownable, ReentrancyGuard {
         closeTime = openTime.add(_duration);
         fundingWallet = _wallet;
         _transferOwnership(tx.origin);
-        _unpause();
-        singer = _singer;
+        paused = false;
         offeredCurrencies[_offeredCurrency] = OfferedCurrency({
             rate: _offeredRate,
             decimals: _offeredCurrencyDecimals
@@ -107,7 +129,9 @@ contract IDOPool is Pausable, Ownable, ReentrancyGuard {
             closeTime,
             _offeredCurrency,
             _offeredCurrencyDecimals,
-            _offeredRate
+            _offeredRate,
+            _wallet,
+            owner
         );
     }
 }

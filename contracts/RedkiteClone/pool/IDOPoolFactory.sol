@@ -3,9 +3,10 @@ pragma solidity ^0.8.0;
 
 import "./IDOPool.sol";
 import "./IIDOPool.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-// import "@openzeppelin/contracts/security/Pausable.sol";
+import "../libraries/Ownable.sol"; 
+import "../libraries/Pausable.sol"; 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
 
 contract IDOPoolFactory is Ownable, Pausable, Initializable {
     // Array of created Pools Address
@@ -71,8 +72,7 @@ contract IDOPoolFactory is Ownable, Pausable, Initializable {
         address _offeredCurrency,
         uint256 _offeredCurrencyDecimals,
         uint256 _offeredRate,
-        address _wallet,
-        address _singer
+        address _wallet
     ) external whenNotPaused returns (address pool) {
         require(_token != address(0), "ICOFactory::ZERO_TOKEN_ADDRESS");
         require(_duration != 0, "ICOFactory::ZERO_DURATION");
@@ -94,8 +94,7 @@ contract IDOPoolFactory is Ownable, Pausable, Initializable {
             _offeredCurrency,
             _offeredRate,
             _offeredCurrencyDecimals,
-            _wallet,
-            _singer
+            _wallet
         );
         getPools[msg.sender][_token].push(pool);
         allPools.push(pool);

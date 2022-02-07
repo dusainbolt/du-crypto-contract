@@ -9,7 +9,6 @@ interface IIDOPool {
         address _offeredCurrency,
         uint256 _offeredRate,
         uint256 _offeredCurrencyDecimals,
-        address _wallet,
-        address _singer
+        address _wallet
     ) external;
 }
