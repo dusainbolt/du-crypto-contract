@@ -13,6 +13,14 @@ contract Verify {
         return keccak256(abi.encodePacked(_candidate, _maxAmount, _minAmount));
     }
 
+    function getClaimMessageHash(address _candidate, uint256 _amount)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(_candidate, _amount));
+    }
+
     function getEthSignedMessageHash(bytes32 _messageHash)
         private
         pure
@@ -41,6 +49,17 @@ contract Verify {
             _maxAmount,
             _minAmount
         );
+        bytes32 ethSignMessagehash = getEthSignedMessageHash(messageHash);
+        return getSingerAdderss(ethSignMessagehash, signature) == _singer;
+    }
+
+    function verifyClaimToken(
+        address _singer,
+        address _candidate,
+        uint256 _amount,
+        bytes memory signature
+    ) public pure returns (bool) {
+        bytes32 messageHash = getClaimMessageHash(_candidate, _amount);
         bytes32 ethSignMessagehash = getEthSignedMessageHash(messageHash);
         return getSingerAdderss(ethSignMessagehash, signature) == _singer;
     }

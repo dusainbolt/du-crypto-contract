@@ -39,8 +39,17 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
     // Amount of token sold
     uint256 public tokenSold = 0;
 
+    // Amount of token sold
+    uint256 public totalUnclaimed = 0;
+
     // Number of token user purchased
     mapping(address => uint256) public userPurchased;
+
+    // Number of token user claimed
+    mapping(address => uint256) public userClaimed;
+
+    // Number of token user purchased
+    mapping(address => mapping(address => uint256)) public investedAmountOf;
 
     // Get offered currencies
     mapping(address => OfferedCurrency) public offeredCurrencies;
@@ -74,6 +83,7 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
         uint256 value,
         uint256 amount
     );
+    event TokenClaimed(address user, uint256 amount);
     event RefundedIcoToken(address wallet, uint256 amount);
     event PoolStatsChanged();
 
@@ -160,6 +170,14 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
         return offeredCurrencies[_token].decimals;
     }
 
+    /**
+     * @notice Return the available tokens for purchase
+     * @return availableTokens Number of total available
+     */
+    function getAvailableTokensForSale() public view returns (uint256) {
+        return token.balanceOf(address(this)).sub(totalUnclaimed);
+    }
+
     function setOfferCurrencyRateAndDecimals(
         address _token,
         uint256 _rate,
@@ -217,16 +235,27 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
             weiAmount
         );
 
+        require(
+            getAvailableTokensForSale() >= tokens,
+            "POOL::NOT_ENOUGHT_TOKENS_FOR_SALE"
+        );
+
         uint256 amountPurchased = userPurchased[msg.sender].add(tokens);
+
         require(tokens >= _minAmount, "POOL:MINT_AMOUNT_UNREACHED");
         require(
             amountPurchased <= _maxAmount,
             "POOL:PURCHASE_AMOUNT_OVER_TO_LIMIT"
         );
 
-        _deliverTokens(_beneficiary, tokens);
-        _forwardTokens(weiAmount);
+        // _deliverTokens(_beneficiary, tokens);
+        _forwardFunds(weiAmount);
         _updatePurchasingState(weiAmount, tokens);
+
+        investedAmountOf[address(0)][_candidate] = investedAmountOf[address(0)][
+            _candidate
+        ].add(weiAmount);
+
         emit TokenPurchaseByEther(msg.sender, _beneficiary, weiAmount, tokens);
     }
 
@@ -251,10 +280,15 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
             "POOL:INVALID_SIGNATURE"
         );
 
-        _verifyAllowance(msg.sender, _token, _amount);
+        // _verifyAllowance(msg.sender, _token, _amount);
 
         // caculate token amount to created
         uint256 tokens = _getOfferedCurrencyToTokenAmount(_token, _amount);
+
+        require(
+            getAvailableTokensForSale() >= tokens,
+            "POOL::NOT_ENOUGHT_TOKENS_FOR_SALE"
+        );
 
         uint256 amountPurchased = userPurchased[msg.sender].add(tokens);
         require(tokens >= _minAmount, "POOL:MINT_AMOUNT_UNREACHED");
@@ -263,9 +297,13 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
             "POOL:PURCHASE_AMOUNT_OVER_TO_LIMIT"
         );
 
-        _deliverTokens(_beneficiary, tokens);
-        _forwardTokens(_amount);
+        // _deliverTokens(_beneficiary, tokens);
+        _forwardTokenFunds(_token, _amount);
         _updatePurchasingState(_amount, tokens);
+
+        investedAmountOf[_token][_candidate] = investedAmountOf[address(0)][
+            _candidate
+        ].add(_amount);
 
         emit TokenPurchaseByToken(
             msg.sender,
@@ -276,14 +314,16 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
         );
     }
 
-    function refundRemainingTokens(address _wallet, uint256 _amount)
+    function refundRemainingTokens(address _wallet)
         external
         onlyOwner
         isFinalized
     {
         require(token.balanceOf(address(this)) > 0, "POOL::ICO_NOT_ENDED");
-        _deliverTokens(_wallet, _amount);
-        emit RefundedIcoToken(_wallet, _amount);
+        uint256 remainingTokens = getAvailableTokensForSale();
+
+        _deliverTokens(_wallet, remainingTokens);
+        emit RefundedIcoToken(_wallet, remainingTokens);
     }
 
     modifier isFinalized() {
@@ -291,14 +331,40 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
         _;
     }
 
-    function _verifyAllowance(
-        address _user,
-        address _token,
-        uint256 _amount
-    ) private view {
-        IERC20 tradeToken = IERC20(_token);
-        uint256 allowance = tradeToken.allowance(_user, address(this));
-        require(allowance >= _amount, "POOL:TOKEN_NOT_APPROVE");
+    /**
+     * @notice User can receive their tokens when pool finished
+     */
+    function claimTokens(
+        address _candidate,
+        uint256 _amount,
+        bytes memory _signature
+    ) public nonReentrant isFinalized {
+        require(
+            _verifyClaimToken(_candidate, _amount, _signature),
+            "POOL:INVALID_SINGATURE_CLAIM"
+        );
+        require(
+            _amount >= userClaimed[_candidate],
+            "POOL:AMOUNT_MUST_GREATER_THAN_CLAIMED"
+        );
+
+        uint256 maxClaimAmount = userPurchased[_candidate].sub(
+            userClaimed[_candidate]
+        );
+
+        uint256 claimAmount = _amount.sub(userClaimed[_candidate]);
+
+        if (claimAmount > maxClaimAmount) {
+            claimAmount = maxClaimAmount;
+        }
+
+        userClaimed[_candidate] = userClaimed[_candidate].add(claimAmount);
+
+        _deliverTokens(msg.sender, claimAmount);
+
+        totalUnclaimed = totalUnclaimed.sub(claimAmount);
+
+        emit TokenClaimed(msg.sender, claimAmount);
     }
 
     /**
@@ -310,15 +376,24 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
     {
         tokenSold = tokenSold.add(_tokens);
         weiRaised = weiRaised.add(_weiAmount);
+        userPurchased[msg.sender] = userPurchased[msg.sender].add(_tokens);
+        totalUnclaimed = totalUnclaimed.add(_tokens);
     }
 
     /**
      * @dev Determines how ETH is stored/forwarded on purchases.
      */
-    function _forwardTokens(uint256 value) internal {
+    function _forwardFunds(uint256 _value) internal {
         address payable wallet = payable(fundingWallet);
-        (bool sent, ) = wallet.call{value: value}("");
-        require(sent, "POOL::WALLET_TRANSFER_ETHER_FAILED");
+        (bool sent, ) = wallet.call{value: _value}("");
+        require(sent, "POOL::WALLET_TRANSFER_FAILED");
+    }
+
+    /**
+     * @dev Determines how Token is stored/forwarded on purchases.
+     */
+    function _forwardTokenFunds(address _token, uint256 _amount) internal {
+        IERC20(_token).transferFrom(msg.sender, fundingWallet, _amount);
     }
 
     /**
@@ -330,9 +405,6 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
         internal
     {
         token.transfer(_beneficiary, _tokenAmount);
-        userPurchased[_beneficiary] = userPurchased[_beneficiary].add(
-            _tokenAmount
-        );
     }
 
     /**
@@ -383,5 +455,21 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
                 verify(signer, _candidate, _maxAmount, _minAmount, signature);
         }
         return true;
+    }
+
+    /**
+     * @dev Verify permission of purchase
+     * @param _candidate Address of buyer
+     * @param _amount claimable amount
+     * @param _signature Signature of signers
+     */
+    function _verifyClaimToken(
+        address _candidate,
+        uint256 _amount,
+        bytes memory _signature
+    ) private view returns (bool) {
+        require(msg.sender == _candidate, "POOL::WRONG_CANDIDATE");
+
+        return (verifyClaimToken(signer, _candidate, _amount, _signature));
     }
 }
