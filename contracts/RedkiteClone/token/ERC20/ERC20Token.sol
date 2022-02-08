@@ -13,11 +13,11 @@ contract ERC20Token is ERC20Burnable, ERC20Mintable {
     ) ERC20(name_, symbol_) {
         _mint(owner, totalSupply);
     }
-    // function _beforeTokenTransfer(
-    //     address from,
-    //     address to,
-    //     uint256 amount
-    // ) internal virtual override(ERC20) {
-    //     super._beforeTokenTransfer(from, to, amount);
-    // }
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override(ERC20) {
+        super._beforeTokenTransfer(from, to, amount);
+    }
 }

@@ -230,6 +230,77 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
         emit TokenPurchaseByEther(msg.sender, _beneficiary, weiAmount, tokens);
     }
 
+    function buyTokenByTokenWithPermission(
+        address _beneficiary,
+        address _token,
+        uint256 _amount,
+        address _candidate,
+        uint256 _maxAmount,
+        uint256 _minAmount,
+        bytes memory _signature
+    ) public payable whenNotPaused nonReentrant {
+        require(
+            offeredCurrencies[_token].rate != 0,
+            "POOL::PURCHASE_METHOD_NOT_ALLOW"
+        );
+        _preValidatePurchase(_beneficiary, _amount);
+
+        require(_validPurchase(), "POOL::ENDED");
+        require(
+            _verifyWhitelist(_candidate, _maxAmount, _minAmount, _signature),
+            "POOL:INVALID_SIGNATURE"
+        );
+
+        _verifyAllowance(msg.sender, _token, _amount);
+
+        // caculate token amount to created
+        uint256 tokens = _getOfferedCurrencyToTokenAmount(_token, _amount);
+
+        uint256 amountPurchased = userPurchased[msg.sender].add(tokens);
+        require(tokens >= _minAmount, "POOL:MINT_AMOUNT_UNREACHED");
+        require(
+            amountPurchased <= _maxAmount,
+            "POOL:PURCHASE_AMOUNT_OVER_TO_LIMIT"
+        );
+
+        _deliverTokens(_beneficiary, tokens);
+        _forwardTokens(_amount);
+        _updatePurchasingState(_amount, tokens);
+
+        emit TokenPurchaseByToken(
+            msg.sender,
+            _beneficiary,
+            _token,
+            _amount,
+            tokens
+        );
+    }
+
+    function refundRemainingTokens(address _wallet, uint256 _amount)
+        external
+        onlyOwner
+        isFinalized
+    {
+        require(token.balanceOf(address(this)) > 0, "POOL::ICO_NOT_ENDED");
+        _deliverTokens(_wallet, _amount);
+        emit RefundedIcoToken(_wallet, _amount);
+    }
+
+    modifier isFinalized() {
+        require(block.timestamp >= closeTime, "POOL::ICO_NOT_ENDED");
+        _;
+    }
+
+    function _verifyAllowance(
+        address _user,
+        address _token,
+        uint256 _amount
+    ) private view {
+        IERC20 tradeToken = IERC20(_token);
+        uint256 allowance = tradeToken.allowance(_user, address(this));
+        require(allowance >= _amount, "POOL:TOKEN_NOT_APPROVE");
+    }
+
     /**
      * @param _tokens Value of sold tokens
      * @param _weiAmount Value in wei involved in the purchase
