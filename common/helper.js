@@ -10,7 +10,7 @@ class Helper {
     return Helper.convertWeiToEther(balance);
   };
   static mulDecimal = (number = 0, decimal = 18) => {
-    return BigNumber.from(number).mul(BigNumber.from(10).pow(27));
+    return BigNumber.from(number).mul(BigNumber.from(10).pow(decimal));
   }
 }
 
