@@ -1,5 +1,6 @@
 const { ethers } = require('hardhat');
 
+const BigNumber = ethers.BigNumber;
 class Helper {
   static convertWeiToEther = value => {
     return ethers.utils.formatEther(value);
@@ -8,6 +9,9 @@ class Helper {
     const balance = await account.getBalance();
     return Helper.convertWeiToEther(balance);
   };
+  static mulDecimal = (number = 0, decimal = 18) => {
+    return BigNumber.from(number).mul(BigNumber.from(10).pow(27));
+  }
 }
 
 module.exports = Helper;

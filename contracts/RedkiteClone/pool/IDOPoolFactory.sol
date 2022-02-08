@@ -76,8 +76,8 @@ contract IDOPoolFactory is Ownable, Pausable, Initializable {
     ) external whenNotPaused returns (address pool) {
         require(_token != address(0), "ICOFactory::ZERO_TOKEN_ADDRESS");
         require(_duration != 0, "ICOFactory::ZERO_DURATION");
-        require(_wallet != address(0), "ICOFactory:ZERO_WALLET_ADDRESS");
-        require(_offeredRate != 0, "ICOFactory:ZERO_OFFERED_RATE");
+        require(_wallet != address(0), "ICOFactory::ZERO_WALLET_ADDRESS");
+        require(_offeredRate != 0, "ICOFactory::ZERO_OFFERED_RATE");
 
         bytes memory bytecode = type(IDOPool).creationCode;
         uint256 tokenIndex = getCreatePoolByTokenLength(msg.sender, _token);
