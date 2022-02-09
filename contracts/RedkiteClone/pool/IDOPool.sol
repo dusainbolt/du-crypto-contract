@@ -195,6 +195,7 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
     }
 
     function setOpenTime(uint256 _openTime) external onlyOwner {
+        require(_openTime < closeTime, "POOL:OPENTIME_MUST_BE_SMALLER_THAN_CLOSETIME");
         openTime = _openTime;
         emit PoolStatsChanged();
     }

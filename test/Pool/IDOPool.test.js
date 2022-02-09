@@ -13,7 +13,7 @@ const _ = {
 
 describe('IDO Pool Factory', () => {
   beforeEach(async () => {
-    [owner, idoOwner] = await ethers.getSigners();
+    [owner, wallet] = await ethers.getSigners();
     // USDTToken = '0x7648563Ef8FFDb8863fF7aDB5A860e3b14D28946';
 
     const StableTokenFactory = await ethers.getContractFactory('StableToken');
@@ -23,7 +23,7 @@ describe('IDO Pool Factory', () => {
 
     const ERC20TokenFactory = await ethers.getContractFactory('ERC20Token');
     // Deploy IDO token
-    idoToken = await ERC20TokenFactory.deploy('IDOToken', 'LHD', idoOwner.address, Helper.mulDecimal(5, 27));
+    idoToken = await ERC20TokenFactory.deploy('IDOToken', 'LHD', owner.address, Helper.mulDecimal(5, 27));
     await idoToken.deployed();
 
     idoTokenAddress = idoToken.address;
@@ -40,120 +40,112 @@ describe('IDO Pool Factory', () => {
       _.offerCurrencyUSDT,
       _.offerCurrencyDecimals,
       _.offerCurrencyRate,
-      owner.address
+      wallet.address
     );
 
     const IDOPoolAddress = poolFactory.allPools(0);
 
-    const IDOPoolFactory = ethers.getContractFactory('IDOPool');
+    const IDOPoolFactory = await ethers.getContractFactory('IDOPool');
 
     pool = IDOPoolFactory.attach(IDOPoolAddress);
 
     // transfer token to pool
-    ERC20Token.transfer(IDOPoolAddress, Helper.convertEtherToWei(1000000));
-
+    idoToken.transfer(IDOPoolAddress, Helper.convertEtherToWei("1000000"));
   });
 
-  // it('Should return the Owner address', async () => {
-  //   expect(await poolFactory.owner()).to.equal(owner.address);
-  // });
+  // Initialize properties
+  it('Should return the Owner Address', async function () {
+    const ownerAddress = await pool.owner();
+    expect(ownerAddress).to.equal(owner.address);
+  });
 
-  // it('Should return false for initialize suspending status', async () => {
-  //   expect(await poolFactory.paused()).to.equal(false);
-  // });
+  // Token Address
+  it('Should return token address', async function () {
+    const tokenAddress = await pool.token();
+    expect(tokenAddress).to.equal(idoTokenAddress);
+  });
 
-  // it('Should return zero pool length', async () => {
-  //   const poolLength = await poolFactory.getPoolsLength();
-  //   expect(poolLength).to.equal(0);
-  // });
+  // Factory Address
+  it('Should return factory address', async function () {
+    const factoryAddress = await pool.factory();
+    expect(factoryAddress).to.equal(poolFactory.address);
+  });
 
-  // it('Should register success pool', async () => {
-  //   await poolFactory.registerPool(
-  //     idoTokenAddress,
-  //     _.duration,
-  //     _.openTime,
-  //     _.offerCurrencyUSDT,
-  //     _.offerCurrencyDecimals,
-  //     _.offerCurrencyRate,
-  //     wallet
-  //   );
-  //   // get Pool length
-  //   const poolLength = await poolFactory.getPoolsLength();
-  //   expect(poolLength).to.equal(1);
+  // fundingWallet Address
+  it('Should return fundingWallet address equal wallet', async function () {
+    const fundingWallet = await pool.fundingWallet();
+    expect(fundingWallet).to.equal(wallet.address);
+  });
 
-  //   const createdPool = await poolFactory.allPools(0);
-  //   const pool = await poolFactory.getPools(owner.address, idoTokenAddress, 0);
-  //   expect(createdPool).to.equal(pool);
-  // });
+  // Open time
+  it('Should return correct open time', async function () {
+    const openTime = await pool.openTime();
+    expect(openTime).to.equal(_.openTime);
+  });
 
-  // it('Should revert register pool with token address 0', async () => {
-  //   await expect(
-  //     poolFactory.registerPool(
-  //       _.address0,
-  //       _.duration,
-  //       _.openTime,
-  //       _.offerCurrencyUSDT,
-  //       _.offerCurrencyDecimals,
-  //       _.offerCurrencyRate,
-  //       wallet
-  //     )
-  //   ).to.revertedWith('ICOFactory::ZERO_TOKEN_ADDRESS');
-  // });
+  // Close time
+  it('Should return correct close time', async function () {
+    const closeTime = await pool.closeTime();
+    expect(closeTime).to.equal(parseInt(_.openTime) + _.duration);
+  });
 
-  // it('Should revert register pool with duration equal 0', async () => {
-  //   await expect(
-  //     poolFactory.registerPool(
-  //       idoTokenAddress,
-  //       0,
-  //       _.openTime,
-  //       _.offerCurrencyUSDT,
-  //       _.offerCurrencyDecimals,
-  //       _.offerCurrencyRate,
-  //       wallet
-  //     )
-  //   ).to.revertedWith('ICOFactory::ZERO_DURATION');
-  // });
+  // Set Close time
+  it('Should set Close time', async function () {
+    const newCloseTime = (parseInt(_.openTime) + _.duration) + _.duration;
+    await pool.setCloseTime(newCloseTime);
+    expect(newCloseTime).to.equal(await pool.closeTime());
+  });
 
-  // it('Should revert register pool with wallet address 0', async () => {
-  //   await expect(
-  //     poolFactory.registerPool(
-  //       idoTokenAddress,
-  //       _.duration,
-  //       _.openTime,
-  //       _.offerCurrencyUSDT,
-  //       _.offerCurrencyDecimals,
-  //       _.offerCurrencyRate,
-  //       _.address0
-  //     )
-  //   ).to.revertedWith('ICOFactory::ZERO_WALLET_ADDRESS');
-  // });
+  // Set Close time
+  it('Should set Open time', async function () {
+    const newOpenTime = (parseInt(_.openTime) + _.duration) + _.duration - 100000;
+    await pool.setOpenTime(newOpenTime);
+    expect(newOpenTime).to.equal(await pool.openTime());
+  });
 
-  // it('Should revert register pool with Offer rate equal 0', async () => {
-  //   await expect(
-  //     poolFactory.registerPool(
-  //       idoTokenAddress,
-  //       _.duration,
-  //       _.openTime,
-  //       _.offerCurrencyUSDT,
-  //       _.offerCurrencyDecimals,
-  //       0,
-  //       wallet
-  //     )
-  //   ).to.revertedWith('ICOFactory::ZERO_OFFERED_RATE');
-  // });
+  // Get getEtherConversionRate
+  // 0x0000000000000000000000000000000000000000
+  it('Should return correct etherConversionRate', async function () {
+    await pool.setOfferCurrencyRateAndDecimals(_.address0, 1, 100);
+    expect(await pool.getOfferedCurrencyRate(_.address0)).to.equal(1);
+    expect(await pool.getOfferedCurrencyDecimals(_.address0)).to.equal(100);
+  });
 
-  // it('Should revert register pool when paused is true', async () => {
-  //   await poolFactory.pause();
-  //   await expect(
-  //     poolFactory.registerPool(
-  //       idoTokenAddress,
-  //       _.duration,
-  //       _.openTime,
-  //       _.offerCurrencyUSDT,
-  //       _.offerCurrencyDecimals,
-  //       _.offerCurrencyRate,
-  //       wallet
-  //     )
-  //   ).to.revertedWith('CONTRACT_PAUSED');
-  // });
+  // Set token conversion rate
+  // 0x0000000000000000000000000000000000000000
+  it('Should return correct USDT token conversion rate', async function () {
+    await pool.setOfferCurrencyRateAndDecimals(USDTToken.address, 1, 100);
+    expect(await pool.getOfferedCurrencyRate(USDTToken.address)).to.equal(1);
+    expect(await pool.getOfferedCurrencyDecimals(USDTToken.address)).to.equal(100);
+  });
+
+  it('Should return correct USDC token conversion rate', async function () {
+    await pool.setOfferCurrencyRateAndDecimals(USDCToken.address, 1, 100);
+    expect(await pool.getOfferedCurrencyRate(USDCToken.address)).to.equal(1);
+    expect(await pool.getOfferedCurrencyDecimals(USDCToken.address)).to.equal(100);
+  });
+
+  it('Should return correct USDC & USDT token conversion rate', async function () {
+    await pool.setOfferCurrencyRateAndDecimals(USDTToken.address, 2, 200);
+    await pool.setOfferCurrencyRateAndDecimals(USDCToken.address, 1, 100);
+
+    expect(await pool.getOfferedCurrencyRate(USDTToken.address)).to.equal(2);
+    expect(await pool.getOfferedCurrencyDecimals(USDTToken.address)).to.equal(200);
+    expect(await pool.getOfferedCurrencyRate(USDCToken.address)).to.equal(1);
+    expect(await pool.getOfferedCurrencyDecimals(USDCToken.address)).to.equal(100);
+  });
+
+  // Get getEtherConversionRateDecimals
+  it('Should return correct etherConversionRateDecimals', async function () {});
+
+  // Should return correct factory
+  it('Should return correct factory address', async function () {});
+
+  // Should claim correctly
+  it('Buy by ETH and Claim correct value for Claim functions', async function () {});
+
+  it('Buy by Token and Claim correct value for Claim functions', async function () {});
+
+  // Should refund remain token correctly
+  it('Refund remaining token', async function () {});
 });
