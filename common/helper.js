@@ -1,19 +1,20 @@
 const { ethers } = require('hardhat');
 
-const BigNumber = ethers.BigNumber;
+// const BigNumber = ethers.BigNumber;
 class Helper {
-  static convertWeiToEther = value => {
+  static formatEther = value => {
     return ethers.utils.formatEther(value);
   };
-  static convertEtherToWei = value => {
+  static parseEther = value => {
     return ethers.utils.parseEther(value);
   };
   static getAccBalanceEther = async account => {
     const balance = await account.getBalance();
-    return Helper.convertWeiToEther(balance);
+    return Helper.formatEther(balance);
   };
   static mulDecimal = (number = 0, decimal = 18) => {
-    return BigNumber.from(number).mul(BigNumber.from(10).pow(decimal));
+    return ethers.utils.parseUnits(number?.toString(), decimal)
+    //  BigNumber.from(number).mul(BigNumber.from(10).pow(decimal));
   }
 }
 

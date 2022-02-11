@@ -21,9 +21,6 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
     // The address of factory contract
     address public factory;
 
-    // The address of signer account
-    address public signer;
-
     // Address where funds are collected
     address public fundingWallet;
 
@@ -453,7 +450,7 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
     ) private view returns (bool) {
         if (useWhitelist) {
             return
-                verify(signer, _candidate, _maxAmount, _minAmount, signature);
+                verify(owner, _candidate, _maxAmount, _minAmount, signature);
         }
         return true;
     }
@@ -462,7 +459,7 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
      * @dev Verify permission of purchase
      * @param _candidate Address of buyer
      * @param _amount claimable amount
-     * @param _signature Signature of signers
+     * @param _signature Signature of owners
      */
     function _verifyClaimToken(
         address _candidate,
@@ -471,6 +468,6 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
     ) private view returns (bool) {
         require(msg.sender == _candidate, "POOL::WRONG_CANDIDATE");
 
-        return (verifyClaimToken(signer, _candidate, _amount, _signature));
+        return (verifyClaimToken(owner, _candidate, _amount, _signature));
     }
 }
