@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { ethers, upgrades } = require('hardhat');
+const { ethers, upgrades, web3 } = require('hardhat');
 const Helper = require('../../common/helper');
 
 const _ = {
@@ -140,7 +140,7 @@ describe('IDO Pool Factory', () => {
     const maxAmount = _.amountTokenOfPool;
     const signature = await getBuySignature(buyer.address, maxAmount, 0);
     const verify = await pool.verify(owner.address, buyer.address, maxAmount, 0, signature);
-    console.log("===> VERiFY: ", verify);
+    console.log("===> VERiFY: ", verify, signature);
   });
 
   // Should claim correctly
@@ -164,10 +164,11 @@ describe('IDO Pool Factory', () => {
 
   const getBuySignature = async (buyerAddress, maxAmount, minAmount) => {
     const hash = await pool.getMessageHash(buyerAddress, maxAmount.toString(), minAmount);
-    console.log("=====> : _candidate", buyerAddress);
-    console.log("=====> : _maxAmount", maxAmount.toString());
-    console.log("=====> : _minAmount", minAmount);
+    console.log("=====> : _owner", owner.address);
+    const signature = await web3.eth.sign(hash, owner.address);
 
-    return await owner.signMessage(hash);
+    console.log("=====> : _hash", signature);
+    // return await owner.signMessage(hash);
+    return signature;
   };
 });

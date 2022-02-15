@@ -51,9 +51,9 @@ contract Verify {
             _minAmount
         );
         bytes32 ethSignMessagehash = getEthSignedMessageHash(messageHash);
-        console.log("=====> : _candidate", _candidate);
-        console.log("=====> : _candidate", _maxAmount);
-        console.log("=====> : _candidate", _minAmount);
+        console.log("=====> : _singer", _singer);
+        console.log("=====> : _recover", getSingerAdderss(ethSignMessagehash, signature));
+
         return getSingerAdderss(ethSignMessagehash, signature) == _singer;
     }
 
