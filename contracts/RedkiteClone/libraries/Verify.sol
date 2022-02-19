@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "hardhat/console.sol";
 
 contract Verify {
     // Using Openzeppelin ECDSA cryptography library
@@ -51,9 +50,6 @@ contract Verify {
             _minAmount
         );
         bytes32 ethSignMessagehash = getEthSignedMessageHash(messageHash);
-        console.log("=====> : _singer", _singer);
-        console.log("=====> : _recover", getSingerAdderss(ethSignMessagehash, signature));
-
         return getSingerAdderss(ethSignMessagehash, signature) == _singer;
     }
 

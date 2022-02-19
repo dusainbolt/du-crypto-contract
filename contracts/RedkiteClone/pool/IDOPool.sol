@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../libraries/Pausable.sol";
 import "../libraries/Verify.sol";
+import "hardhat/console.sol";
 
 contract IDOPool is Pausable, ReentrancyGuard, Verify {
     using SafeMath for uint256;
@@ -282,7 +283,6 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
 
         // caculate token amount to created
         uint256 tokens = _getOfferedCurrencyToTokenAmount(_token, _amount);
-
         require(
             getAvailableTokensForSale() >= tokens,
             "POOL::NOT_ENOUGHT_TOKENS_FOR_SALE"
@@ -391,6 +391,7 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
      * @dev Determines how Token is stored/forwarded on purchases.
      */
     function _forwardTokenFunds(address _token, uint256 _amount) internal {
+        console.log("_amount: ", _amount);
         IERC20(_token).transferFrom(msg.sender, fundingWallet, _amount);
     }
 
@@ -417,6 +418,9 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
     {
         uint256 rate = getOfferedCurrencyRate(_token);
         uint256 decimals = getOfferedCurrencyDecimals(_token);
+        // console.log("====>rate %s", rate);
+        // console.log("====>decimals %s", decimals);
+        // console.log("====>_amount %s", _amount.mul(rate));
         return _amount.mul(rate).div(10**decimals);
     }
 

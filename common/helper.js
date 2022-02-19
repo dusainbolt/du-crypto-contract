@@ -14,7 +14,6 @@ class Helper {
   };
   static mulDecimal = (number = 0, decimal = 18) => {
     return ethers.utils.parseUnits(number?.toString(), decimal)
-    //  BigNumber.from(number).mul(BigNumber.from(10).pow(decimal));
   }
 }
 
