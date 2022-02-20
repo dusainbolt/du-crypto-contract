@@ -391,7 +391,6 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
      * @dev Determines how Token is stored/forwarded on purchases.
      */
     function _forwardTokenFunds(address _token, uint256 _amount) internal {
-        console.log("_amount: ", _amount);
         IERC20(_token).transferFrom(msg.sender, fundingWallet, _amount);
     }
 

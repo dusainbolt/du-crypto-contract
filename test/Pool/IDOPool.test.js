@@ -21,12 +21,12 @@ describe("IDO Pool Factory", () => {
 
     const StableTokenFactory = await ethers.getContractFactory("StableToken");
 
-    USDTToken = await StableTokenFactory.deploy("Tether", "USDT");
-    USDCToken = await StableTokenFactory.deploy("USD Coin", "USDC");
+    USDTToken = await StableTokenFactory.deploy("Tether", "USDT", 6);
+    USDCToken = await StableTokenFactory.deploy("USD Coin", "USDC", 6);
 
     const ERC20TokenFactory = await ethers.getContractFactory("ERC20Token");
     // Deploy IDO token
-    idoToken = await ERC20TokenFactory.deploy("IDOToken", "LHD", owner.address, Helper.mulDecimal(5, 27));
+    idoToken = await ERC20TokenFactory.deploy("IDOToken", "LHD", owner.address, Helper.mulDecimal(5, 27), 18);
 
     await idoToken.deployed();
 
@@ -56,7 +56,6 @@ describe("IDO Pool Factory", () => {
     // transfer token to pool
     idoToken.transfer(IDOPoolAddress, _.amountTokenOfPool);
     USDCToken.transfer(buyer.address, Helper.mulDecimal(10000, 6));
-
   });
 
   // Initialize properties
@@ -184,27 +183,71 @@ describe("IDO Pool Factory", () => {
   it("Buy by Token and Claim correct value for Claim functions", async () => {
     const buyerAddress = buyer.address;
 
-    await pool.setOfferCurrencyRateAndDecimals(USDCToken.address, 10, 18);
+    await pool.setOfferCurrencyRateAndDecimals(USDCToken.address, 1, 1);
 
-    const maxAmount = Helper.mulDecimal("10000000", 18);
+    const maxAmount = Helper.mulDecimal("10000000", 6);
     const signature = await getBuySignature(buyerAddress, maxAmount, 0);
-    const buyAmount = Helper.mulDecimal("100000", 18);
-    console.log("==> buy amount: ", buyAmount);
+    const buyAmount = Helper.mulDecimal("100", 6);
+    // console.log("==> buy amount: ", buyAmount);
     await USDCToken.connect(buyer).approve(pool.address, buyAmount);
     expect(await USDCToken.allowance(buyerAddress, pool.address)).to.equal(buyAmount);
- 
 
-    await pool.connect(buyer).buyTokenByTokenWithPermission(buyerAddress, USDCToken.address, buyAmount, buyerAddress, maxAmount, 0, signature);
+    await pool
+      .connect(buyer)
+      .buyTokenByTokenWithPermission(buyerAddress, USDCToken.address, buyAmount, buyerAddress, maxAmount, 0, signature);
+    const totalUnclaim = await pool.totalUnclaimed();
 
-    // let block = await getCurrentBlock();
-    // let blockTimestamp = await getBlockTimestamp(block);
-    // await pool.setCloseTime(Math.floor(blockTimestamp + 10));
-    // await time.advanceBlockTo((await getCurrentBlock()) + 10);
+    expect(await USDCToken.balanceOf(wallet.address)).to.equal(buyAmount);
 
+    let block = await getCurrentBlock();
+    let blockTimestamp = await getBlockTimestamp(block);
+    await pool.setCloseTime(Math.floor(blockTimestamp + 10));
+    await time.advanceBlockTo((await getCurrentBlock()) + 10);
+
+    const claimAmount1 = Helper.mulDecimal("1", 6);
+
+    const claimSignature200 = await getClaimSignature(buyerAddress, claimAmount1);
+
+    await pool.connect(buyer).claimTokens(buyerAddress, claimAmount1, claimSignature200);
+    const newTotalUnClaim = await pool.totalUnclaimed();
+    expect(await idoToken.balanceOf(buyerAddress)).to.equal(claimAmount1);
+    expect(newTotalUnClaim).to.equal(totalUnclaim.sub(claimAmount1));
   });
 
   // Should refund remain token correctly
-  it("Refund remaining token", async () => {});
+  it("Refund remaining token", async () => {
+    const buyerAddress = buyer.address;
+
+    await pool.setOfferCurrencyRateAndDecimals(USDCToken.address, 1, 1);
+
+    const maxAmount = Helper.mulDecimal("10000000", 6);
+    const signature = await getBuySignature(buyerAddress, maxAmount, 0);
+    const buyAmount = Helper.mulDecimal("100", 6);
+    await USDCToken.connect(buyer).approve(pool.address, buyAmount);
+    expect(await USDCToken.allowance(buyerAddress, pool.address)).to.equal(buyAmount);
+
+    await pool
+      .connect(buyer)
+      .buyTokenByTokenWithPermission(buyerAddress, USDCToken.address, buyAmount, buyerAddress, maxAmount, 0, signature);
+
+    let block = await getCurrentBlock();
+    let blockTimestamp = await getBlockTimestamp(block);
+    await pool.setCloseTime(Math.floor(blockTimestamp + 10));
+    await time.advanceBlockTo((await getCurrentBlock()) + 10);
+
+    const claimAmount1 = Helper.mulDecimal("1", 6);
+
+    const claimSignature200 = await getClaimSignature(buyerAddress, claimAmount1);
+
+    await pool.connect(buyer).claimTokens(buyerAddress, claimAmount1, claimSignature200);
+    const totalUnclaim = await pool.totalUnclaimed();
+    const balanceOwner = await idoToken.balanceOf(owner.address);
+    const balanceAvailable = await idoToken.balanceOf(pool.address);
+
+    await pool.refundRemainingTokens(owner.address);
+
+    expect(await idoToken.balanceOf(owner.address)).to.equal((balanceAvailable.sub(totalUnclaim)).add(balanceOwner));
+  });
 
   const getBuySignature = async (buyerAddress, maxAmount, minAmount) => {
     const hash = await pool.getMessageHash(buyerAddress, maxAmount, minAmount);
