@@ -247,7 +247,6 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
             "POOL:PURCHASE_AMOUNT_OVER_TO_LIMIT"
         );
 
-        // _deliverTokens(_beneficiary, tokens);
         _forwardFunds(weiAmount);
         _updatePurchasingState(weiAmount, tokens);
 
@@ -295,7 +294,6 @@ contract IDOPool is Pausable, ReentrancyGuard, Verify {
             "POOL:PURCHASE_AMOUNT_OVER_TO_LIMIT"
         );
 
-        // _deliverTokens(_beneficiary, tokens);
         _forwardTokenFunds(_token, _amount);
         _updatePurchasingState(_amount, tokens);
 
