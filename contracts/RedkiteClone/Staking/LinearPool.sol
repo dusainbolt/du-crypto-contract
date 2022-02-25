@@ -173,4 +173,61 @@ contract LinearPool is OwnableUpgradeable {
 
         emit LinearPoolCreated(linearPoolInfo.length - 1, _APR);
     }
+
+    /**
+     * @notice Update the given pool's info. Can only be called by the owner.
+     * @param _poolId id of the pool
+     * @param _cap the maximum number of staking tokens the pool will receive. If this limit is reached, users can not deposit into this pool.
+     * @param _minInvestment minimum investment users need to use in order to join the pool.
+     * @param _maxInvestment the maximum investment amount users can deposit to join the pool.
+     * @param _APR the APR rate of the pool.
+     * @param _endJoinTime the time when users can no longer join the pool
+     */
+    function linearSetPool(
+        uint128 _poolId,
+        uint128 _cap,
+        uint128 _minInvestment,
+        uint128 _maxIvestment,
+        uint64 _APR,
+        uint128 _endJoinTime
+    ) external linearValidatePool(_poolId) {
+        LinearPoolInfo storage pool = linearPoolInfo[_poolId];
+
+        require(
+            _endJoinTime > block.timestamp && _endJoinTime > pool.startJoinTime,
+            "LinearStakingPool: invalid end join time"
+        );
+
+        pool.cap = _cap;
+        pool.minInvestment = _minInvestment;
+        pool.maxInvestment = _maxIvestment;
+        pool.APR = _APR;
+        pool.endJoinTime = _endJoinTime;
+    }
+
+    /**
+     * @notice Set the flexible lock time. This will affects the flexible pool. Can only be called by onwer
+     * @param _flexLockDuration the minium lock duration
+     */
+    function linearSetFlexLockDuration(uint128 _flexLockDuration)
+        external
+        onlyOwner
+    {
+        require(
+            _flexLockDuration <= LINEAR_MAXIMUM_DELAY_DURATION,
+            "LinearStakingPool: flexible lock duration is too long"
+        );
+        linearFlexLockDuration = _flexLockDuration;
+    }
+
+    /**
+     * @notice Set the rewarad distributor. Can only be called by the owner
+     * @param _linearRewarddistributor the reward distributor
+     */
+    function linearSetRewardDistributor(address _linearRewardDistributor)
+        external
+        onlyOwner
+    {
+        linearRewardDistributor = _linearRewardDistributor;
+    }
 }
